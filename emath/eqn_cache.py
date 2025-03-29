@@ -1,4 +1,5 @@
 import pygame
+from PIL import Image
 
 from emath import tex
 
@@ -7,6 +8,30 @@ DEFAULT_EQUATION_CACHE_LOCATION = DEFAULT_EQUATION_CACHE_DIR + "cache.csv"
 DEFAULT_PROPS = {
     'id' : 0
 }
+
+def get_top_pixel(pix, h, x):
+    for i in range(h):
+        if pix[x, i] != (255, 255, 255, 0):
+            return i
+    return 9999
+
+def get_bottom_pixel(pix, h, x):
+    for i in range(h - 1, 0, -1):
+        if pix[x, i] != (255, 255, 255, 0):
+            return i
+    return 0
+
+def get_left_pixel(pix, w, x):
+    for i in range(w):
+        if pix[i, x] != (255, 255, 255, 0):
+            return i
+    return 9999
+
+def get_right_pixel(pix, w, x):
+    for i in range(w - 1, 0, -1):
+        if pix[i, x] != (255, 255, 255, 0):
+            return i
+    return 0
 
 class EquationCache:
     """
@@ -35,6 +60,7 @@ class EquationCache:
         """
         Converts a LaTeX equation into an image and loads it using pygame. It
         also caches the loaded image.
+        The image is also cropped so that transparent blank space is minimized
         """
         filename = DEFAULT_EQUATION_CACHE_DIR + str(self.props['id']) + '.png'
         tex.render_latex_to_png(latex, filename)
@@ -42,13 +68,39 @@ class EquationCache:
 
         # load the cached equation as a pygame surface
         surface = pygame.image.load(filename)
+
+        # because of how matplotlib works, we need to crop the image to only
+        # contain the equation, since most of it will be empty
+        im = Image.open(filename)
+        pix = im.load()
+
+        width, height = im.size
+        top_pixel = 9999
+        bottom_pixel = 0
+        left_pixel = 9999
+        right_pixel = 0
+
+        for i in range(width):
+            top_pixel = min(get_top_pixel(pix, height, i), top_pixel)
+            bottom_pixel = max(get_bottom_pixel(pix, height, i), bottom_pixel)
+        for i in range(height):
+            left_pixel = min(get_left_pixel(pix, width, i), left_pixel)
+            right_pixel = max(get_right_pixel(pix, width, i), right_pixel)
+        print(left_pixel, right_pixel, top_pixel, bottom_pixel)
+
+        # now that we have the top and bottom pixels, lets crop the image
+        surface = surface.subsurface(
+            (left_pixel,
+             top_pixel,
+             right_pixel - left_pixel + 1,
+             bottom_pixel - top_pixel + 1))
         self.loaded_equations[self.props['id'] - 1] = surface
 
         return (surface, self.props['id'] - 1)
 
     def scale_equation(self, id, new_size):
         """
-        Scales an equation surface to a new size
+        Scales an equation surface to a new size and crops the image
         """
         assert id in self.loaded_equations.keys()
         scaled = pygame.transform.smoothscale(self.loaded_equations[id], new_size)

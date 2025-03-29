@@ -3,6 +3,7 @@ from matplotlib import font_manager
 
 plt.rcParams["font.family"] = "serif"
 plt.rcParams["mathtext.fontset"] = "cm"
+plt.rcParams["text.color"] = "#ffeecc"
 
 def render_latex_to_png(expression, filename):
     """
@@ -15,7 +16,7 @@ def render_latex_to_png(expression, filename):
 
     plt.savefig(
         filename,
-        dpi=300,
+        dpi=150,
         bbox_inches='tight',
         transparent=True
     )

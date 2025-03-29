@@ -4,18 +4,14 @@ import emath.math_render as mrend
 
 import emath.make_eq as make_eq
 
+import emath.question_manager as question_manager
+
 import sympy
 
 import pygame
 
 pygame.init()
-
-x = sympy.Symbol('x')
-e = sympy.Symbol('e')
-exp = make_eq.EquationBuilder().make_random_equation(4)
-c = cache.EquationCache()
-c.unload_all()
-c.save_equation_cache()
+pygame.font.init()
 
 WIDTH   = 1280
 HEIGHT  = 720
@@ -24,21 +20,25 @@ def main():
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Lattice β")
 
-    math_renderer = mrend.MathRenderer(WIDTH, HEIGHT)
-    math_renderer.add_scaled(r"$" + sympy.latex(sympy.diff(exp, x)) + "$", [0, 0])
+    qman = question_manager.QuestionManager(screen)
+    qman.generate_question()
 
+    clock = pygame.time.Clock()
     run = True
     while run:
-        screen.fill((0xe0, 0xb0, 0x2f))
+        delta = clock.tick(240)
+        screen.fill((0x20, 0x20, 0x20))
 
-        for event in pygame.event.get():
+        events = pygame.event.get()
+        for event in events:
             if event.type == pygame.QUIT:
                 run = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
                     run = False
 
-        math_renderer.render(screen)
+        qman.render()
+        qman.update(events, delta)
 
         pygame.display.update()
 
