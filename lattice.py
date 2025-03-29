@@ -42,6 +42,8 @@ def main():
 
         pygame.display.update()
 
+    qman.renderer.equation_cache.save_equation_cache()
+
 
 if __name__ == "__main__":
     main()

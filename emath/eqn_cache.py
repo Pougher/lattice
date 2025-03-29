@@ -46,6 +46,7 @@ class EquationCache:
     def __init__(self):
         self.loaded_equations = {}
         self.props = {}
+        self.base = 0
 
         self.load_equation_cache()
 
@@ -55,6 +56,9 @@ class EquationCache:
         """
         assert id in self.loaded_equations.keys()
         return self.loaded_equations[id]
+
+    def get_offset(self, pos):
+        return self.loaded_equations[list(self.loaded_equations.keys())[pos]]
 
     def load_equation(self, latex):
         """
@@ -141,6 +145,8 @@ class EquationCache:
         cache_info = cache_info.split(',')
         for i in range(0, len(cache_info), 2):
             self.props[cache_info[i]] = int(cache_info[i + 1])
+
+        self.base = self.props['id']
 
     def save_equation_cache(self):
         """

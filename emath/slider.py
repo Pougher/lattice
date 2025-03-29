@@ -28,6 +28,15 @@ class Slider:
         self.scale_factor = \
             (self.surface.get_rect().w - self.width) / (self.width * 0.7)
 
+    def get_height(self):
+        return self.height + 10 + self.slider_rect[3]
+
+    def move(self, x, y):
+        self.slider_rect[0] += x
+        self.slider_rect[1] += y
+        self.position[0] += x
+        self.position[1] += y
+
     def render(self, screen):
         """
         Draws the slider and a clipped portion of the full surface to the
