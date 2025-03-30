@@ -1,5 +1,7 @@
 import pygame
 
+from emath.utils import colour_interpolate
+
 class TextInput:
     def __init__(self,
                  position,
@@ -32,6 +34,9 @@ class TextInput:
         self.last_cursor_position = 0
         self.window_pos = 0
         self.submit_fn = submit_fn
+
+        self.held_key = None
+        self.held_key_frames = 0
 
         self.active = False
 
@@ -83,14 +88,6 @@ class TextInput:
         ]
         self.content_surf = self.font.render(render, True, self.current_colour)
 
-    def colour_interpolate(self, c, t, v):
-        interp = [
-            int(c[0] - (c[0] - t[0]) * v),
-            int(c[1] - (c[1] - t[1]) * v),
-            int(c[2] - (c[2] - t[2]) * v),
-        ]
-        return interp
-
     def set_opacity(self, c):
         """
         Set colour doesn't work how you would expect it to. Its more of an
@@ -98,11 +95,11 @@ class TextInput:
         respective elements of the textinput should be.
         """
         # opacity is a % color towards a target
-        self.current_line_colour = self.colour_interpolate(
+        self.current_line_colour = colour_interpolate(
             self.line_colour, self.target_colour, c)
-        self.current_colour = self.colour_interpolate(
+        self.current_colour = colour_interpolate(
             self.colour, self.target_colour, c)
-        grayed = self.colour_interpolate([
+        grayed = colour_interpolate([
             self.colour[0] - 64,
             self.colour[1] - 64,
             self.colour[2] - 64],
@@ -121,6 +118,26 @@ class TextInput:
         self.cursor_position = 0
         self.window_pos = 0
 
+    def key_right(self):
+        if self.cursor_position < len(self.contents):
+            self.cursor_position += 1
+        self.render_contents()
+
+    def key_left(self):
+        if self.window_pos != 0 and (self.cursor_position == self.window_pos):
+            self.window_pos -= 1
+            print(self.window_pos)
+        elif self.cursor_position > 0: self.cursor_position -= 1
+        self.render_contents()
+
+    def update(self, events, delta):
+        self.held_key_frames += 1
+        if self.held_key_frames > 120:
+            if self.held_key == pygame.K_LEFT:
+                if self.held_key_frames % 2 == 0: self.key_left()
+            elif self.held_key == pygame.K_RIGHT:
+                if self.held_key_frames % 2 == 0: self.key_right()
+
     def recieve_key_down(self, key, unicode):
         """
         Recieve key down takes a key code and its unicode character value. This
@@ -134,15 +151,13 @@ class TextInput:
                 self.cursor_position -= 1
                 self.render_contents()
         elif key == pygame.K_LEFT:
-            if self.window_pos != 0 and (self.cursor_position == self.window_pos):
-                self.window_pos -= 1
-                print(self.window_pos)
-            elif self.cursor_position > 0: self.cursor_position -= 1
-            self.render_contents()
+            self.key_left()
+            self.held_key_frames = 0
+            self.held_key = pygame.K_LEFT
         elif key == pygame.K_RIGHT:
-            if self.cursor_position < len(self.contents):
-                self.cursor_position += 1
-            self.render_contents()
+            self.key_right()
+            self.held_key_frames = 0
+            self.held_key = pygame.K_RIGHT
         elif unicode != '':
             if self.active:
                 if unicode == '\r' or unicode == '\n':
@@ -154,3 +169,7 @@ class TextInput:
 
                 # rerender the text
                 self.render_contents()
+
+    def recieve_key_up(self, key, unicode):
+        if key == self.held_key:
+            self.held_key = None

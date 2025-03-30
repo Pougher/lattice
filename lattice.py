@@ -5,6 +5,7 @@ import emath.math_render as mrend
 import emath.make_eq as make_eq
 
 import emath.question_manager as question_manager
+from emath.latte_manager import LatteManager
 
 import sympy
 
@@ -14,14 +15,13 @@ pygame.init()
 pygame.font.init()
 
 WIDTH   = 2560
-HEIGHT  = 1600
+HEIGHT  = 1440
 
 def main():
     screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
     pygame.display.set_caption("Lattice β")
 
-    qman = question_manager.QuestionManager(screen)
-    qman.generate_question()
+    context_manager = LatteManager(screen)
 
     clock = pygame.time.Clock()
     run = True
@@ -37,12 +37,12 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     run = False
 
-        qman.render()
-        qman.update(events, delta)
+        context_manager.render()
+        context_manager.update(events, delta)
 
         pygame.display.update()
 
-    qman.renderer.equation_cache.save_equation_cache()
+    context_manager.close()
 
 
 if __name__ == "__main__":

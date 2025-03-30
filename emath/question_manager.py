@@ -20,8 +20,8 @@ def convert_millis(millis):
 
     return "{:02d}:{:02d}:{:02d}.{:03d}".format(hours, minutes, seconds, millis)
 
-class QuestionManager:
-    def __init__(self, screen):
+class DifferentialQuestionManager:
+    def __init__(self, screen, font):
         self.screen = screen
         self.width, self.height = pygame.display.get_surface().get_size()
         self.renderer = math_render.MathRenderer(self.width, self.height)
@@ -29,7 +29,7 @@ class QuestionManager:
 
         self.current_question = None
         self.current_answer = None
-        self.difficulty_level = 4
+        self.difficulty_level = 3
 
         self.question_tween = None
         self.answer_tween = None
@@ -40,8 +40,9 @@ class QuestionManager:
         self.input_allowed_in = -1
         self.frame_counter = 0
 
+        self.font = font
+
         # setup the font
-        self.font = pygame.font.Font('res/robotomono.ttf', 28)
 
         self.answer_input = Tween(TextInput(
             [ 0.05 * self.width, self.height * 0.6 ],
@@ -89,6 +90,7 @@ class QuestionManager:
         self.question_tween = self.renderer.add_scaled(
             r"$" + sympy.latex(sympy.Derivative(self.current_question)) + "$",
             [0, 0.25 * self.height], center_x = True)
+        self.question_tween.obj.set_opacity(1)
         self.question_tween.fade(240)
 
         # setup the text objects
@@ -247,6 +249,8 @@ class QuestionManager:
 
     def update(self, events, delta):
         self.answer_input.update()
+        self.answer_input.obj.update(events, delta)
+
         for text in self.text_displays.values():
             text.update()
         self.renderer.update(events)
@@ -270,6 +274,10 @@ class QuestionManager:
                     if self.answer_input.obj.active:
                         self.answer_input.obj.recieve_key_down(
                             event.key, event.unicode)
+            if event.type == pygame.KEYUP:
+                if self.answer_input.obj.active:
+                    self.answer_input.obj.recieve_key_up(
+                        event.key, event.unicode)
 
         # NOTE: This is done because of my stupid badly made tweening system.
         # Basically if you make inputs before a tweening animation has

@@ -1,5 +1,7 @@
 import pygame
 
+from emath.utils import colour_interpolate
+
 class Slider:
     """
     Slider is a class that can be used to simulate a "scrolling image" effect,
@@ -19,6 +21,9 @@ class Slider:
         self.height = surface.get_rect().h
         self.foreground_color = foreground_color
         self.background_color = background_color
+        self.current_foreground_color = foreground_color
+        self.current_background_color = background_color
+        self.background = [32, 32, 32]
         self.slider_rect =[ self.position[0],
             self.position[1] + self.height + 10,
             int(self.width * 0.3), 10]
@@ -27,6 +32,7 @@ class Slider:
         self.offset = 0
         self.scale_factor = \
             (self.surface.get_rect().w - self.width) / (self.width * 0.7)
+        self.opacity = 0
 
     def get_height(self):
         return self.height + 10 + self.slider_rect[3]
@@ -36,6 +42,15 @@ class Slider:
         self.slider_rect[1] += y
         self.position[0] += x
         self.position[1] += y
+
+    def set_opacity(self, v):
+        self.opacity = v
+        self.surface.set_alpha((1.0 - v) * 255)
+
+        self.current_foreground_color = \
+            colour_interpolate(self.foreground_color, self.background, v)
+        self.current_background_color = \
+            colour_interpolate(self.background_color, self.background, v)
 
     def render(self, screen):
         """
@@ -52,7 +67,7 @@ class Slider:
         # now draw the bar and the background
         pygame.draw.rect(
             screen,
-            self.background_color,
+            self.current_background_color,
             [
                 self.position[0],
                 self.position[1] + self.height + 10,
@@ -63,7 +78,7 @@ class Slider:
         )
         pygame.draw.rect(
             screen,
-            self.foreground_color,
+            self.current_foreground_color,
             self.slider_rect,
             border_radius = 8
         )
