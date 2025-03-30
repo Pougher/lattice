@@ -14,11 +14,11 @@ import pygame
 pygame.init()
 pygame.font.init()
 
-WIDTH   = 2560
-HEIGHT  = 1440
+WIDTH   = 1280
+HEIGHT  = 720
 
 def main():
-    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Lattice β")
 
     context_manager = LatteManager(screen)

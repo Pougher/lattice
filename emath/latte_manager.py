@@ -90,7 +90,7 @@ class LatteManager:
         difficulty_value = Text(
             "Difficulty: {:02d}".\
                 format(self.current_question_manager.difficulty_level),
-            self.font, [0, self.height * 0.7])
+            self.font, [0, self.height * 0.9])
         difficulty_value.position[0] = \
             (self.width - difficulty_value.get_width()) / 2
 
