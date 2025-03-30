@@ -63,8 +63,7 @@ class MathRenderer:
         Reset does what it says it does: resets the positions, equations and
         sliders
         """
-        self.positions = []
-        self.equations = []
+        self.surfaces = []
         self.sliders = []
         self.equation_cache.unload_all()
 

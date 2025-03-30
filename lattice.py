@@ -13,11 +13,11 @@ import pygame
 pygame.init()
 pygame.font.init()
 
-WIDTH   = 1280
-HEIGHT  = 720
+WIDTH   = 2560
+HEIGHT  = 1600
 
 def main():
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
     pygame.display.set_caption("Lattice β")
 
     qman = question_manager.QuestionManager(screen)
@@ -34,7 +34,7 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_q:
+                if event.key == pygame.K_ESCAPE:
                     run = False
 
         qman.render()

@@ -10,14 +10,15 @@ class Text:
         self.font = font
         self.position = position
         self.colour = colour
+        self.active = True
 
     def get_width(self):
-        surf = self.font.render(self.text, True, self.colour)
-        return surf.get_rect().w
+        return self.font.size(self.text)[0]
 
     def render(self, screen):
-        surf = self.font.render(self.text, True, self.colour)
-        screen.blit(surf, self.position)
+        if self.active:
+            surf = self.font.render(self.text, True, self.colour)
+            screen.blit(surf, self.position)
 
     def get_colour(self):
         return self.colour

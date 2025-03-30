@@ -1,5 +1,6 @@
 import pygame
 import sympy
+import random
 
 import emath.math_render as math_render
 import emath.make_eq as make_eq
@@ -28,7 +29,7 @@ class QuestionManager:
 
         self.current_question = None
         self.current_answer = None
-        self.difficulty_level = 18
+        self.difficulty_level = 4
 
         self.question_tween = None
         self.answer_tween = None
@@ -36,25 +37,47 @@ class QuestionManager:
         self.solve_time = 0
         self.solving = True
 
+        self.input_allowed_in = -1
+        self.frame_counter = 0
+
         # setup the font
-        self.font = pygame.font.Font('res/robotomono.ttf', 30)
+        self.font = pygame.font.Font('res/robotomono.ttf', 28)
 
         self.answer_input = Tween(TextInput(
-            [ 20, 20 ],
-            200,
-            100,
+            [ 0.05 * self.width, self.height * 0.6 ],
+            self.width - 0.1 * self.width,
             self.font,
             20,
-            (64, 64, 64)
+            (128, 128, 128),
+            self.answer_entered
         ))
+        self.answer_input.obj.set_opacity(1)
 
+        self.init_text_objects()
+
+    def init_text_objects(self):
+        """
+        This initializes all of the displayed text objects
+        """
         self.text_displays = {
-            "timer" : Tween(
+            "timer"     : Tween(
                 Text('00:00:00.000', self.font, (0, 0), [230, 170, 30])),
-            "pspace": Tween(
+            "pspace"    : Tween(
                 Text('[Press Space when you are done]',
-                     self.font, (0, 0), [64, 64, 64]))
+                     self.font, (0, 0), [64, 64, 64])),
+            "anscheck"  : Tween(
+                Text('Your answer was correct',
+                     self.font, [0, 0], [32, 32, 32])),
+            "nextq"     : Tween(
+                Text("[Press Space for the next question]",
+                     self.font, [20, 200], [64, 64, 64]))
         }
+
+        self.text_displays['nextq'].obj.move(
+            (self.width - self.text_displays['nextq'].obj.get_width()) / 2,
+            self.height * 0.65 + 1 + self.font.get_height()
+        )
+        self.text_displays["nextq"].obj.active = False
 
     def generate_question(self):
         self.current_question = self.equation_builder.make_random_equation(
@@ -66,18 +89,22 @@ class QuestionManager:
         self.question_tween = self.renderer.add_scaled(
             r"$" + sympy.latex(sympy.Derivative(self.current_question)) + "$",
             [0, 0.25 * self.height], center_x = True)
+        self.question_tween.fade(240)
 
         # setup the text objects
         self.text_displays['timer'].obj.position = [
             (self.width - self.text_displays['timer'].obj.get_width()) / 2,
             0.6 * self.height
         ]
+        self.text_displays['timer'].obj.colour = [32, 32, 32]
+        self.text_displays['timer'].change_color([230, 170, 30], 240)
+
         self.text_displays['pspace'].obj.position = [
             (self.width - self.text_displays['pspace'].obj.get_width()) / 2,
             0.65 * self.height
         ]
-        #self.renderer.add_scaled(
-        #    r"$" + sympy.latex(self.current_answer) + "$", [0, 200])
+        self.text_displays['nextq'].obj.colour = [32, 32, 32]
+        self.text_displays['nextq'].obj.active = False
 
     def render(self):
         self.renderer.render(self.screen)
@@ -87,6 +114,8 @@ class QuestionManager:
 
         # render the "press space when your done"
         self.text_displays['pspace'].render(self.screen)
+        self.text_displays['anscheck'].render(self.screen)
+        self.text_displays['nextq'].render(self.screen)
 
         self.answer_input.render(self.screen)
 
@@ -105,7 +134,6 @@ class QuestionManager:
             lambda x: x.move_sin(0, change, 480),
             240
         )
-        print(change)
 
         # in addition to this, the text display should try and move 1 / 20th
         # of the screen resolution below the question
@@ -116,22 +144,139 @@ class QuestionManager:
             lambda x: x.move_sin(0, target, 480),
             240
         )
-        self.text_displays['timer'].obj.colour = (140, 185, 50)
+        self.text_displays['timer'].obj.colour = [140, 185, 50]
 
         # we also need to change the press space text to being invisible
         self.text_displays['pspace'].change_color([32, 32, 32], 480)
 
+        # lets allow the user to input an answer
+        self.answer_input.wait_then(
+            lambda x: x.fade(240),
+            480
+        )
+        self.input_allowed_in = 730
+        self.frame_counter = 0
+
+    def test_answer(self, expr):
+        """
+        one input isn't really enough, so we will test 10
+        Reasoning: some functions given the same value of x can return the same
+        value, despite not actually being equal.
+        Also we never substitute zero because that causes issues sometimes
+        """
+        c = 0
+        for i in range(10):
+            v = random.randint(1, 100)
+            try:
+                if expr.subs({'x' : v}) == self.current_answer.subs({'x' : v}):
+                    c += 1
+            except:
+                return (0, -1)
+
+        return (c == 10, 0)
+
+    def answer_entered(self, answer):
+        """
+        So the user has entered their answer. Lets turn this into a sympy
+        expression and evaluate it, and compare it against the derivative
+        """
+        expr = None
+        correct = None
+        try:
+            expr = sympy.sympify(answer)
+            correct = self.test_answer(expr)
+
+            if correct[1] != 0:
+                print("Bad input")
+                return
+        except:
+            print("Bad input")
+            return
+
+        if correct[0]:
+            self.text_displays['anscheck'].obj.text = 'Your answer was correct'
+            self.text_displays['anscheck'].wait_then(
+                lambda x: x.change_color([140, 185, 50], 240),
+                240)
+        else:
+            self.text_displays['anscheck'].obj.text = \
+                'Your answer was not correct'
+            self.text_displays['anscheck'].wait_then(
+                lambda x: x.change_color([230, 50, 80], 240),
+                240)
+
+
+        self.text_displays['anscheck'].obj.position[0] = \
+            (self.width - self.text_displays['anscheck'].obj.get_width()) / 2
+        self.text_displays['anscheck'].obj.position[1] = self.height * 0.7
+        self.text_displays['timer'].change_color([32, 32, 32], 240)
+
+        self.answer_input.obj.active = False
+        self.answer_input.fade(-240)
+
+        answer_height = max(
+            self.question_tween.obj.get_height(),
+            0.4 * self.height)
+        self.answer_tween = self.renderer.add_scaled(
+            r"$" + sympy.latex(self.current_answer) + "$",
+            [0, answer_height], center_x = True)
+        self.answer_tween.obj.set_opacity(1.0)
+        self.answer_tween.fade(480)
+
+        self.text_displays['nextq'].obj.active = True
+        self.text_displays['nextq'].wait_then(
+            lambda x: x.change_color([64, 64, 64], 240),
+            480
+        )
+
+    def handle_next_question(self):
+        """
+        Handles rerendering and resetting the question manager's state to
+        prepare it for the next question
+        """
+        self.renderer.reset()
+        self.answer_tween = None
+
+        self.solving = True
+        self.solve_time = 0
+
+        self.init_text_objects()
+        self.generate_question()
+
+        self.answer_input.obj.reset()
+
     def update(self, events, delta):
-        self.renderer.update(events)
+        self.answer_input.update()
         for text in self.text_displays.values():
             text.update()
+        self.renderer.update(events)
 
-        if self.solving:
+        if self.solving and not self.text_displays['timer'].in_transition():
             self.solve_time += delta
             self.text_displays['timer'].obj.text = \
                 convert_millis(self.solve_time)
 
         for event in events:
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    self.on_finish_solving()
+                if self.text_displays['nextq'].obj.active and not\
+                    self.text_displays['nextq'].in_transition():
+                    print('handling')
+                    self.handle_next_question()
+                    print(self.text_displays['nextq'].obj.active)
+                elif self.solving and event.key == pygame.K_SPACE:
+                    if not self.text_displays['timer'].in_transition():
+                        self.on_finish_solving()
+                else:
+                    if self.answer_input.obj.active:
+                        self.answer_input.obj.recieve_key_down(
+                            event.key, event.unicode)
+
+        # NOTE: This is done because of my stupid badly made tweening system.
+        # Basically if you make inputs before a tweening animation has
+        # finished, then a fun thing happens where everything crashes. Thus I
+        # had to implement this 730 frame delay, which makes sure everything is
+        # all fine before accepting input
+        self.frame_counter += 1
+        if self.frame_counter == self.input_allowed_in:
+            self.input_allowed_in = -1
+            self.answer_input.obj.active = True
